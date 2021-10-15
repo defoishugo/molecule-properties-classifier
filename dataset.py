@@ -1,12 +1,13 @@
 import pandas as pd
 import numpy as np
+import pickle as pk
 from rdkit import Chem
 from sklearn.model_selection import train_test_split
 from feature_extractor import fingerprint_features
 
 
 TEST_RATIO = 0.2
-RANDOM_SMILES = 10
+RANDOM_SMILES = 300
 
 
 def randomize_smiles(smiles):
@@ -41,21 +42,63 @@ def balance_dataset(X, y):
     return X_balanced, y_balanced
 
 
-def build_dataset(radius, size):
+def load_existing_dataset():
+    with open('../vectors_save.pkl', 'rb') as f:
+        (X_train, y_train, X_test, y_test) = pk.load(f)
+    print("Dataset loaded from existing file.")
+    return X_train, X_test, y_train, y_test
+
+
+def save_dataset(X_train, y_train, X_test, y_test):
+    with open('../vectors_save.pkl', 'wb') as f:
+        data = X_train, y_train, X_test, y_test
+        pk.dump(data, f)
+    print("Dataset saved.")
+
+
+def filter_features(X_train, y_train, X_test, y_test):
+    unuseful_features = np.bitwise_and.reduce(X_train) == X_train[0]
+    useful_features = [i for i, k in enumerate(unuseful_features) if k]
+    X_train = np.delete(X_train, useful_features, axis=1)
+    X_test = np.delete(X_test, useful_features, axis=1)
+    return X_train, y_train, X_test, y_test
+
+
+def keep_unique_samples(X, y):
+    unique_values, unique_indexes = np.unique(X, axis=0, return_index=True)
+    X = np.array(X)[unique_indexes]
+    y = np.array(y)[unique_indexes]
+    return X, y
+
+
+def build_dataset(radius, size, save=False, use_save=False):
+    if use_save:
+        return load_existing_dataset()
+
     raw_dataset = pd.read_csv("../dataset_single.csv", sep=",")
     X_train, X_test, y_train, y_test = train_test_split(raw_dataset["smiles"],
                                                         raw_dataset["P1"],
                                                         test_size=TEST_RATIO,
                                                         random_state=0,
                                                         shuffle=True)
-
     X_train, y_train = upsample_dataset(X_train.tolist(), y_train.tolist())
+    X_test, y_test = upsample_dataset(X_test.tolist(), y_test.tolist())
+    X_train, y_train = keep_unique_samples(X_train, y_train)
     X_train, y_train = balance_dataset(X_train, y_train)
     X_train = [list(fingerprint_features(x, radius, size)) for x in X_train]
     X_test = [list(fingerprint_features(x, radius, size)) for x in X_test]
+    X_train, y_train, X_test, y_test = filter_features(X_train, y_train,
+                                                       X_test, y_test)
+    print("Dataset built.")
 
-    return X_train, X_test, y_train, y_test
+    X_train, y_train, X_test, y_test = [np.array(arr) for arr in [
+                                            X_train,
+                                            y_train,
+                                            X_test,
+                                            y_test
+                                        ]]
 
+    if save:
+        save_dataset(X_train, y_train, X_test, y_test)
 
-X_train, X_test, y_train, y_test = build_dataset(2, 2048)
-print(X_train)
+    return X_train, y_train, X_test, y_test
