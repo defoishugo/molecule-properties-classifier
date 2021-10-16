@@ -3,11 +3,12 @@ import numpy as np
 import pickle as pk
 from rdkit import Chem
 from sklearn.model_selection import train_test_split
-from feature_extractor import fingerprint_features
+from servier.feature_extractor import fingerprint_features
 
 
 TEST_RATIO = 0.2
-RANDOM_SMILES = 300
+RANDOM_SMILES = 1
+USEFUL_FEATURES_PATH = "__save__/useful_features.pkl"
 
 
 def randomize_smiles(smiles):
@@ -56,12 +57,19 @@ def save_dataset(X_train, y_train, X_test, y_test):
     print("Dataset saved.")
 
 
-def filter_features(X_train, y_train, X_test, y_test):
-    unuseful_features = np.bitwise_and.reduce(X_train) == X_train[0]
-    useful_features = [i for i, k in enumerate(unuseful_features) if k]
+def filter_features(X_train, X_test=None, load_features=False):
+    if load_features:
+        useful_features = pk.load(open(USEFUL_FEATURES_PATH, "rb"))
+    else:
+        unuseful_features = np.bitwise_and.reduce(X_train) == X_train[0]
+        useful_features = [i for i, k in enumerate(unuseful_features) if k]
+        pk.dump(useful_features, open(USEFUL_FEATURES_PATH, "wb"))
     X_train = np.delete(X_train, useful_features, axis=1)
-    X_test = np.delete(X_test, useful_features, axis=1)
-    return X_train, y_train, X_test, y_test
+    if X_test:
+        X_test = np.delete(X_test, useful_features, axis=1)
+        return X_train, X_test
+    else:
+        return X_train
 
 
 def keep_unique_samples(X, y):
@@ -71,11 +79,14 @@ def keep_unique_samples(X, y):
     return X, y
 
 
-def build_dataset(radius, size, save=False, use_save=False):
+def build_training_dataset(radius, size, save=False,
+                           use_save=False, path="ds.csv"):
     if use_save:
         return load_existing_dataset()
 
-    raw_dataset = pd.read_csv("../dataset_single.csv", sep=",")
+    print("Loading and preprocessing the dataset...")
+
+    raw_dataset = pd.read_csv(path, sep=",")
     X_train, X_test, y_train, y_test = train_test_split(raw_dataset["smiles"],
                                                         raw_dataset["P1"],
                                                         test_size=TEST_RATIO,
@@ -87,8 +98,7 @@ def build_dataset(radius, size, save=False, use_save=False):
     X_train, y_train = balance_dataset(X_train, y_train)
     X_train = [list(fingerprint_features(x, radius, size)) for x in X_train]
     X_test = [list(fingerprint_features(x, radius, size)) for x in X_test]
-    X_train, y_train, X_test, y_test = filter_features(X_train, y_train,
-                                                       X_test, y_test)
+    X_train, X_test = filter_features(X_train, X_test)
     print("Dataset built.")
 
     X_train, y_train, X_test, y_test = [np.array(arr) for arr in [
@@ -102,3 +112,14 @@ def build_dataset(radius, size, save=False, use_save=False):
         save_dataset(X_train, y_train, X_test, y_test)
 
     return X_train, y_train, X_test, y_test
+
+
+def build_evaluation_dataset(radius, size, path="../dataset_single.csv"):
+    print("Loading and preprocessing the dataset...")
+    raw_dataset = pd.read_csv(path, sep=",")
+    X = raw_dataset["smiles"].to_numpy()
+    y = raw_dataset["P1"].to_numpy()
+    X = [list(fingerprint_features(x, radius, size)) for x in X]
+    X = filter_features(X, load_features=True)
+    print("Dataset built.")
+    return X, y
