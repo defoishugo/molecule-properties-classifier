@@ -9,6 +9,6 @@ setup(name='servier',
       packages=find_packages(),
       install_requires=["pandas", "numpy", "rdkit-pypi",
                         "sklearn", "tensorflow", "keras",
-                        "keras-tuner"],
+                        "keras-tuner", "Flask"],
       python_requires=">=3.6",
       entry_points={'console_scripts': ['servier=servier:main.main']})

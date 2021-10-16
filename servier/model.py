@@ -9,6 +9,8 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
+from servier.dataset import filter_features
+from servier.feature_extractor import fingerprint_features
 
 tf.compat.v1.enable_eager_execution()
 HYPERPARAMETERS_PATH = "__save__/best_hyperparameters.pkl"
@@ -77,3 +79,10 @@ def import_model():
 def evaluate_model(model, X, y):
     eval_result = model.evaluate(X, y)
     print("[test loss, test accuracy]:", eval_result)
+
+
+def predict_model(model, smiles, radius, size):
+    ecfp = fingerprint_features(str(smiles), radius, size)
+    X = filter_features([ecfp], load_features=True)
+    prediction = model.predict(X)
+    return prediction[0][0]
