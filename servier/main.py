@@ -1,21 +1,24 @@
 import argparse
 import sys
 import os
-from servier.dataset import build_training_dataset, build_evaluation_dataset
-from servier.model import tune_model, train_model, import_model
-from servier.model import evaluate_model, predict_model
+from dataset import build_training_dataset, build_evaluation_dataset
+from model import tune_model, train_model, import_model
+from model import evaluate_model, predict_model
 import pathlib
-import servier.api as api
+import api as api
 
 
-def train(input_table):
+def train(input_table, model):
     if not input_table:
         print("Error: the input table should be "
               "specified with --input-table parameter.")
         return 1
-    training = build_training_dataset(2, 2048, path=input_table)
-    X_train, y_train, X_valid, y_valid = training
-    tuner, best_hps = tune_model(X_train, y_train, X_valid, y_valid)
+    if not model:
+        print("Error: the model id should be "
+              "specified with --model parameter.")
+        return 1
+    X_train, y_train, groups = build_training_dataset(2, 2048, path=input_table, model=model)
+    tuner, best_hps = tune_model(X_train, y_train, groups)
     train_model(X_train, y_train, tuner, best_hps)
     return 0
 
@@ -53,13 +56,14 @@ def main():
     parser.add_argument('--smiles', type=pathlib.Path,
                         help='smiles to predict')
     parser.add_argument('--model', type=int,
-                        help='specify a model number')
+                        help='specify a model number',
+                        choices=[1, 2])
 
     args = parser.parse_args()
     if args.command == "train":
         if not os.path.exists("__save__"):
             os.mkdir("__save__")
-        sys.exit(train(args.input_table))
+        sys.exit(train(args.input_table, args.model))
     elif args.command == "evaluate":
         sys.exit(evaluate(args.input_table))
     elif args.command == "predict":
