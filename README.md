@@ -62,7 +62,7 @@ The proposed neural network offers three layers of non-linear activations. Bayes
 
 A dropout is added after activations of hidden layers to reduce overfitting. The dropout rate is also found by automated tuning.
 
-![The neural network architecture](https://i.ibb.co/Kskkhby/Untitled-Diagram-drawio.png)
+![The neural network architecture](https://i.ibb.co/YDKQq1j/Untitled-Diagram-drawio-6.png)
 
 #### Hypermodel learning
 
