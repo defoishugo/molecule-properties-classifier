@@ -100,6 +100,7 @@ The filter is only applied over the lines with the full width.
 The neural network is similar to the previous one. La fonction d'activation finale est une sigmoid et il y a une partie fully-connected (hidden layer 3). The big difference is the succession of two convolutional layers that learn full-width convolution filters. 
 
 ![The CNN model](https://i.ibb.co/MR819M9/Untitled-Diagram-drawio-11.png)
+
 The input has a volume (V, C, 1) with :
 
 - V: the size of the vector, defined by default to 90. In the training set used, the longest vector was 75. 90 was defined to support predictions on longer SMILES.
