@@ -21,11 +21,11 @@ def train(input_table, model):
                                                          path=input_table,
                                                          model=model)
     if model == 1:
-        model = FCNNModel(X_train, y_train, groups=groups, batch_size=1024,
-                          tune_epochs=1, train_epochs=1, tune_trials=1)
+        model = FCNNModel(X_train, y_train, groups=groups, batch_size=2048,
+                          tune_epochs=75, train_epochs=150, tune_trials=30)
     else:
-        model = CNNModel(X_train, y_train, groups=groups, batch_size=128,
-                         tune_epochs=1, train_epochs=1, tune_trials=1)
+        model = CNNModel(X_train, y_train, groups=groups, batch_size=2048,
+                         tune_epochs=75, train_epochs=150, tune_trials=30)
     model.tune()
     model.train()
     return 0
@@ -62,7 +62,7 @@ def predict(smiles, model):
     if model == 1:
         model = FCNNModel(X, [])
     else:
-        model = FCNNModel(X, [])
+        model = CNNModel(X, [])
     model.import_model()
     pred = model.predict()
     print(f"The smiles {smiles} gives a probability of {pred}.")
@@ -83,7 +83,7 @@ def main():
                         choices=['train', 'evaluate', 'predict', 'serve'])
     parser.add_argument('--input-table', type=pathlib.Path,
                         help='path to the input')
-    parser.add_argument('--smiles', type=pathlib.Path,
+    parser.add_argument('--smiles',
                         help='smiles to predict')
     parser.add_argument('--model', type=int,
                         help='specify a model number',

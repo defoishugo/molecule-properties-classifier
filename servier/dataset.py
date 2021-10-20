@@ -4,7 +4,7 @@ import pickle as pk
 from rdkit import Chem
 from servier.feature_extractor import fingerprint_features as get_ecfp
 
-RANDOM_SMILES = 1
+RANDOM_SMILES = 60
 USEFUL_FEATURES_PATH = "__save__/useful_features.pkl"
 SMILES_CHARS = [' ', '#', '%', '(', ')', '+', '-', '.', '/',
                 '0', '1', '2', '3', '4', '5', '6', '7', '8',
@@ -162,5 +162,6 @@ def build_prediction_dataset(smiles, radius, size, model=1):
         ecfp = get_ecfp(str(smiles), 2, 2048)
         X = filter_features([ecfp], load_features=True)
     else:
-        print("Not supported.")
+        X = smiles2vec(np.array([smiles]))
+        X = X.reshape(-1, VEC_SIZE, len(SMILES_CHARS), 1)
     return X

@@ -57,13 +57,15 @@ class Model():
         self.tuner.search(self.X, self.y, splits=folds, batch_size=1024,
                           epochs=self.tune_epochs,
                           callbacks=[EarlyStopping('val_accuracy',
-                                     mode='max', patience=10)])
+                                     mode='max', patience=4), EarlyStopping('accuracy',
+                                     mode='max', patience=3)])
         self.best_hps = self.tuner.get_best_hyperparameters()[0]
         pickle.dump(self.best_hps, open(HYPERPARAMETERS_PATH, "wb"))
 
     def import_model(self):
         self.best_hps = pickle.load(open(HYPERPARAMETERS_PATH, "rb"))
         self.model = self.build_model(self.best_hps)
+        self.model.summary()
         self.model.load_weights(PARAMETERS_PATH)
 
     def train(self):
