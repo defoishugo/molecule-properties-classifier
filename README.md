@@ -1,3 +1,4 @@
+
 # Molecule Classifier
 
 MoleculeClassification is a molecule properties classifier based on neural networks. The application provides a CLI and REST interface and a Docker image ready to be deployed.
@@ -83,6 +84,7 @@ We represent a molecule by a matrix of fixed size. For this, we one-hot-encode t
 For the two SMILES here (they are not real molecules), we create this representation:
 
 ![smile2vec in action](https://i.ibb.co/SRpxpbY/Untitled-Diagram-drawio-9.png)
+
 The matrix has as many columns as the vocabulary of SMILES (counting atoms, parentheses or even chemical bonds) and as many rows as the size of the largest SMILES in the training dataset. 
 
 The matrix is used to find convolution filters that detect structures within molecules.
@@ -95,7 +97,13 @@ The filter is only applied over the lines with the full width.
 
 #### Neural network architecture
 
-TODO
+The neural network is similar to the previous one. La fonction d'activation finale est une sigmoid et il y a une partie fully-connected (hidden layer 3). The big difference is the succession of two convolutional layers that learn full-width convolution filters. 
+
+![The CNN model](https://i.ibb.co/MR819M9/Untitled-Diagram-drawio-11.png)
+The input has a volume (V, C, 1) with :
+
+- V: the size of the vector, defined by default to 90. In the training set used, the longest vector was 75. 90 was defined to support predictions on longer SMILES.
+- C: the SMILES vocabulary
 
 #### Hypermodel learning
 
@@ -126,21 +134,21 @@ When the application is installed, it can be used by means of the "servier" comm
 
 Train a model:
 
-    servier train --input-path dataset_single.csv --model 1
+    servier --input-path dataset_single.csv --model 1 train
 
 Evaluate the model:
 
-    servier evaluate --input-path dataset_single_test.csv --model 1
+    servier --input-path dataset_single_test.csv --model 1 evaluate
 
 Make predictions:
 
-    servier predict --input-path dataset_single_test.csv --model 1
+    servier --input-path dataset_single_test.csv --model 1 predict
 
 ## API Usage
 
 A REST API exposes the prediction module. For this, the HTTP server must be instantiated:
 
-    servier train --input-path dataset_single.csv --model 1
+    servier --input-path dataset_single.csv --model 1 train
     servier serve
  
 The exposed endpoint is the following:
@@ -152,6 +160,8 @@ Note: as for any URL request, you should encode the SMILES:
 | Before encoding | After encoding  |
 |--|--|
 | Nc1ccc(C(=O)O)c(O)c1 | Nc1ccc%28C%28%3DO%29O%29c%28O%29c1 |
+
+Only the model 1 is supported for the API usage.
 
 ## Docker Usage
 
