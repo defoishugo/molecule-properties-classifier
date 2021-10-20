@@ -82,7 +82,7 @@ We represent a molecule by a matrix of fixed size. For this, we one-hot-encode t
 
 For the two SMILES here (they are not real molecules), we create this representation:
 
-![smile2vec in action](https://i.ibb.co/d2Z2XsN/Untitled-Diagram-drawio-3.png)
+![smile2vec in action](https://i.ibb.co/SRpxpbY/Untitled-Diagram-drawio-9.png)
 The matrix has as many columns as the vocabulary of SMILES (counting atoms, parentheses or even chemical bonds) and as many rows as the size of the largest SMILES in the training dataset. 
 
 The matrix is used to find convolution filters that detect structures within molecules.
