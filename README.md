@@ -62,7 +62,7 @@ The proposed neural network offers three layers of non-linear activations. Bayes
 
 A dropout is added after activations of hidden layers to reduce overfitting. The dropout rate is also found by automated tuning.
 
-![The neural network architecture](https://i.ibb.co/YDKQq1j/Untitled-Diagram-drawio-6.png)
+![The neural network architecture](https://i.ibb.co/bswdFRG/Untitled-Diagram-drawio-8.png)
 
 #### Hypermodel learning
 
@@ -89,7 +89,7 @@ The matrix is used to find convolution filters that detect structures within mol
 
 Here is an example of a filter (with stride = 1 and filter size = 2) we move on one vectorized input:
 
-![smiles2vec convolution](https://i.ibb.co/tpHGLgq/Untitled-Diagram-drawio-4.png)
+![smiles2vec convolution](https://i.ibb.co/TRZrP56/Untitled-Diagram-drawio-7.png)
 
 The filter is only applied over the lines with the full width.
 
