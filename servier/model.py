@@ -1,105 +1,85 @@
-import warnings
-warnings.filterwarnings("ignore", message=r"Passing", category=FutureWarning)
+from sklearn.model_selection import GroupKFold
+from keras.callbacks import EarlyStopping
+from abc import abstractmethod
 import kerastuner as kt
-import tensorflow as tf
 import numpy as np
 import pickle
 import os
-from sklearn.model_selection import GroupKFold
-from keras.layers import Dense, Dropout, Activation
-from tensorflow.keras.optimizers import Adam
-from keras.callbacks import EarlyStopping
-from keras.layers import Input
-from keras.models import Model
-from servier.dataset import filter_features
-from servier.feature_extractor import fingerprint_features
 
-tf.compat.v1.enable_eager_execution()
 HYPERPARAMETERS_PATH = "__save__/best_hyperparameters.pkl"
 PARAMETERS_PATH = "__save__/best_parameters"
 
 
-# For adding new activation function
-from keras import backend as K
-from keras.utils.generic_utils import get_custom_objects
-
-def swish(x):
-    return (K.sigmoid(x) * x)
-
-get_custom_objects().update({'swish': Activation(swish)})
-
 class CVTuner(kt.engine.tuner.Tuner):
-    def run_trial(self, trial, X, y, splits, batch_size=32, epochs=1, callbacks=None):
-        val_losses = []
+    def run_trial(self, trial, X, y, splits, batch_size=32,
+                  epochs=1, callbacks=None):
+        loss = []
         for train_indices, test_indices in splits:
             X_train, X_test = X[train_indices], X[test_indices]
             y_train, y_test = y[train_indices], y[test_indices]
             model = self.hypermodel.build(trial.hyperparameters)
-            hist = model.fit(X_train,y_train,
-                      validation_data=(X_test,y_test),
-                      epochs=epochs,
-                        batch_size=batch_size,
-                      callbacks=callbacks)
-            val_losses.append([hist.history[k][-1] for k in hist.history])
-        val_losses = np.asarray(val_losses)
-        self.oracle.update_trial(trial.trial_id, {k:np.mean(val_losses[:,i]) for i,k in enumerate(hist.history.keys())})
+            hist = model.fit(X_train, y_train,
+                             validation_data=(X_test, y_test),
+                             epochs=epochs,
+                             batch_size=batch_size,
+                             callbacks=callbacks)
+            loss.append([hist.history[k][-1] for k in hist.history])
+        loss = np.asarray(loss)
+        t = {k: np.mean(loss[:, i]) for i, k in enumerate(hist.history.keys())}
+        self.oracle.update_trial(trial.trial_id, t)
         self.save_model(trial.trial_id, model)
 
 
-def build_model(hp, input_shape=0):
-    input = Input(shape=(hp.Int('nb_cols', input_shape, input_shape),))
-    x = Dense(hp.Int('num_units_0', 4, 64), activation=hp.Choice('act_0', ["relu", "swish"]))(input)
-    x = Dropout(hp.Float('dropout_0', 0.0, 0.3))(x)
-    x = Dense(hp.Int('num_units_1', 4, 64), activation=hp.Choice('act_1', ["relu", "swish"]))(x)
-    x = Dropout(hp.Float('dropout_1', 0.0, 0.3))(x)
-    output = Dense(1, activation='sigmoid')(x)
-    model = Model(inputs=input, outputs=output)
-    model.compile(loss="binary_crossentropy",
-                  optimizer=Adam(learning_rate=0.001),
-                  metrics=['accuracy'])
-    return model
+class Model():
+    def __init__(self, X, y, groups=None, batch_size=1024,
+                 tune_epochs=1, train_epochs=1, tune_trials=1):
+        self.X = X
+        self.y = y
+        self.groups = groups
+        self.batch_size = batch_size
+        self.tune_epochs = tune_epochs
+        self.train_epochs = train_epochs
+        self.tune_trials = tune_trials
 
+    def tune(self):
+        group_kfold = GroupKFold(n_splits=5)
+        folds = list(group_kfold.split(self.X, self.y, self.groups))
+        shape = self.X.shape
+        self.tuner = CVTuner(
+            hypermodel=lambda hp: self.build_model(hp, input_shape=shape),
+            oracle=kt.oracles.BayesianOptimization(
+                objective=kt.Objective('val_accuracy', direction='max'),
+                max_trials=self.tune_trials
+            ),
+            directory=os.path.normpath('C:/'),
+            overwrite=True
+        )
+        self.tuner.search(self.X, self.y, splits=folds, batch_size=1024,
+                          epochs=self.tune_epochs,
+                          callbacks=[EarlyStopping('val_accuracy',
+                                     mode='max', patience=10)])
+        self.best_hps = self.tuner.get_best_hyperparameters()[0]
+        pickle.dump(self.best_hps, open(HYPERPARAMETERS_PATH, "wb"))
 
-def tune_model(X_train, y_train, groups):
-    group_kfold = GroupKFold(n_splits=4)
-    folds = list(group_kfold.split(X_train, y_train, groups))
-    tuner = CVTuner(
-        hypermodel=lambda hp: build_model(hp, input_shape=X_train.shape[1]),
-        oracle=kt.oracles.BayesianOptimization(
-            objective=kt.Objective('val_accuracy', direction='max'),
-            max_trials=10
-        ),
-        directory=os.path.normpath('C:/'),
-        overwrite=True
-    )
-    tuner.search(X_train, y_train, splits=folds, batch_size=128, epochs=50,
-                 callbacks=[EarlyStopping('val_accuracy', mode='max', patience=4)])
-    best_hps = tuner.get_best_hyperparameters()[0]
-    pickle.dump(best_hps, open(HYPERPARAMETERS_PATH, "wb"))
-    return tuner, best_hps
+    def import_model(self):
+        self.best_hps = pickle.load(open(HYPERPARAMETERS_PATH, "rb"))
+        self.model = self.build_model(self.best_hps)
+        self.model.load_weights(PARAMETERS_PATH)
 
+    def train(self):
+        self.model = self.tuner.hypermodel.build(self.best_hps)
+        self.model.fit(self.X, self.y, batch_size=1024,
+                       epochs=self.train_epochs)
+        self.model.save_weights(PARAMETERS_PATH)
 
-def train_model(X_train, y_train, tuner, best_hps):
-    hypermodel = tuner.hypermodel.build(best_hps)
-    hypermodel.fit(X_train, y_train, batch_size=128, epochs=300)
-    hypermodel.save_weights(PARAMETERS_PATH)
-    return hypermodel
+    def evaluate(self):
+        results = self.model.evaluate(self.X, self.y, verbose=0)
+        print("[test loss, test accuracy]:", results)
 
+    def predict(self, overwrite_X=None):
+        prediction = self.model.predict(self.X)
+        return prediction[0][0]
 
-def import_model():
-    best_hps = pickle.load(open(HYPERPARAMETERS_PATH, "rb"))
-    model = build_model(best_hps)
-    model.load_weights(PARAMETERS_PATH)
-    return model
-
-
-def evaluate_model(model, X, y):
-    eval_result = model.evaluate(X, y)
-    print("[test loss, test accuracy]:", eval_result)
-
-
-def predict_model(model, smiles, radius, size):
-    ecfp = fingerprint_features(str(smiles), radius, size)
-    X = filter_features([ecfp], load_features=True)
-    prediction = model.predict(X)
-    return prediction[0][0]
+    @abstractmethod
+    def build_model(self, hp, input_shape=(0, 0)):
+        pass

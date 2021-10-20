@@ -1,16 +1,18 @@
 from flask import Flask, Response, request
-from servier.model import import_model, predict_model
+from servier.dataset import build_prediction_dataset
 
-model = None
+model_used = None
 app = Flask("servier")
 
 
 @app.route("/predict")
 def predict():
-    global model
+    global model_used
     smiles = request.args.get("smiles")
+    X = build_prediction_dataset(smiles, 2, 2048)
+    model_used.X = X
     if smiles:
-        prob = predict_model(model, smiles, 2, 2048)
+        prob = model_used.predict()
         return Response('{"message":' + str(prob) + '}',
                         status=200, mimetype='application/json')
     else:
@@ -18,8 +20,8 @@ def predict():
                         mimetype='application/json')
 
 
-def serve():
-    global model
-    model = import_model()
+def serve(model):
+    global model_used
+    model_used = model
     app.run(host='0.0.0.0', port='8000')
     return 0
