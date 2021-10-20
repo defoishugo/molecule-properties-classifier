@@ -97,7 +97,7 @@ The filter is only applied over the lines with the full width.
 
 #### Neural network architecture
 
-The neural network is similar to the previous one. La fonction d'activation finale est une sigmoid et il y a une partie fully-connected (hidden layer 3). The big difference is the succession of two convolutional layers that learn full-width convolution filters. 
+The neural network is similar to the previous one. The final activation function is a sigmoid and there is a fully-connected part (hidden layer 3). The big difference is the succession of two convolutional layers that learn full-width convolution filters. 
 
 ![The CNN model](https://i.ibb.co/MR819M9/Untitled-Diagram-drawio-11.png)
 
@@ -135,21 +135,21 @@ When the application is installed, it can be used by means of the "servier" comm
 
 Train a model:
 
-    servier --input-path dataset_single.csv --model 1 train
+    servier --input-table dataset_single.csv --model 1 train
 
 Evaluate the model:
 
-    servier --input-path dataset_single_test.csv --model 1 evaluate
+    servier --input-table dataset_single_test.csv --model 1 evaluate
 
 Make predictions:
 
-    servier --input-path dataset_single_test.csv --model 1 predict
+    servier --input-table dataset_single_test.csv --model 1 predict
 
 ## API Usage
 
 A REST API exposes the prediction module. For this, the HTTP server must be instantiated:
 
-    servier --input-path dataset_single.csv --model 1 train
+    servier --input-table dataset_single.csv --model 1 train
     servier serve
  
 The exposed endpoint is the following:

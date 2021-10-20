@@ -4,7 +4,6 @@ from abc import abstractmethod
 import kerastuner as kt
 import numpy as np
 import pickle
-import os
 
 HYPERPARAMETERS_PATH = "__save__/best_hyperparameters.pkl"
 PARAMETERS_PATH = "__save__/best_parameters"
@@ -56,8 +55,7 @@ class Model():
         self.tuner.search(self.X, self.y, splits=folds, batch_size=1024,
                           epochs=self.tune_epochs,
                           callbacks=[EarlyStopping('val_accuracy',
-                                     mode='max', patience=4), EarlyStopping('accuracy',
-                                     mode='max', patience=3)])
+                                     mode='max', patience=8)])
         self.best_hps = self.tuner.get_best_hyperparameters()[0]
         pickle.dump(self.best_hps, open(HYPERPARAMETERS_PATH, "wb"))
 

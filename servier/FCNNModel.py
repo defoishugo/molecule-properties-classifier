@@ -23,8 +23,10 @@ class FCNNModel(ServierModel):
         i = Input(shape=hp.Choice('s', [input_shape[1]]))
         x = Dense(units=hp.Int('n0', 4, 64),
                   activation=hp.Choice('a0', ["relu", "swish"]))(i)
+        x = Dropout(hp.Float('d0', 0, 0.3))(x)
         x = Dense(units=hp.Int('n1', 4, 64),
                   activation=hp.Choice('a1', ["relu", "swish"]))(x)
+        x = Dropout(hp.Float('d1', 0, 0.3))(x)
         output = Dense(1, activation='sigmoid')(x)
         model = Model(inputs=i, outputs=output)
         model.compile(loss="binary_crossentropy",
