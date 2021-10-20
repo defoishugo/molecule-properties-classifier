@@ -51,7 +51,6 @@ class Model():
                 objective=kt.Objective('val_accuracy', direction='max'),
                 max_trials=self.tune_trials
             ),
-            directory=os.path.normpath('C:/'),
             overwrite=True
         )
         self.tuner.search(self.X, self.y, splits=folds, batch_size=1024,
