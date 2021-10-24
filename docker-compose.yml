@@ -5,6 +5,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    tty: true
+    command: 'servier'
     ports:
       - 8000:8000
+    volumes:
+      - ./__save__:/root/__save__
+      - ./data:/root/data
+      - ./servier:/tmp/sources/servier
+    environment:
+      - "COMMAND=${COMMAND}"
+      - "CSV=${CSV}"
+      - "MODEL=${MODEL}"
+      - "SMILES=${SMILES}"
+      - "IS_DOCKER_EXEC=1"

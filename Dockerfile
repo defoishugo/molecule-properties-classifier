@@ -9,3 +9,7 @@ COPY servier /tmp/sources/servier
 
 RUN ls /tmp/sources
 RUN pip install /tmp/sources
+
+WORKDIR /root
+
+EXPOSE 8000

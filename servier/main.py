@@ -75,7 +75,7 @@ def serve(model):
     api.serve(model)
 
 
-def main():
+def cli():
     desc = 'Classify molecule properties using neural networks'
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument('command', type=str,
@@ -100,6 +100,30 @@ def main():
         sys.exit(predict(args.smiles, args.model))
     elif args.command == "serve":
         sys.exit(serve(args.model))
+
+
+def docker():
+    if 'COMMAND' not in os.environ:
+        print("Please set the environment variable COMMAND.")
+        sys.exit(1)
+    if os.environ["COMMAND"] == "train":
+        sys.exit(train(f'/root/data/{os.environ["CSV"]}', int(os.environ["MODEL"])))
+    elif os.environ["COMMAND"] == "evaluate":
+        sys.exit(evaluate(f'/root/data/{os.environ["CSV"]}', int(os.environ["MODEL"])))
+    elif os.environ["COMMAND"] == "predict":
+        sys.exit(predict(os.environ["SMILES"], int(os.environ["MODEL"])))
+    elif os.environ["COMMAND"] == "serve":
+        sys.exit(serve(int(os.environ["MODEL"])))
+    else:
+        print("Unknown COMMAND.")
+        sys.exit(1)
+
+
+def main():
+    if 'IS_DOCKER_EXEC' in os.environ:
+        return docker()
+    else:
+        return cli()
 
 
 if __name__ == "__main__":
