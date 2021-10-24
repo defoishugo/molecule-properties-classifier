@@ -1,20 +1,25 @@
-
 # Molecule Classifier
 
-MoleculeClassification is a molecule properties classifier based on neural networks. The application provides a CLI and REST interface and a Docker image ready to be deployed.
+MoleculeClassification is a molecule properties classifier based on neural networks. The application provides a CLI and REST interface and a Docker image ready to be deployed. The repository implements two predictive models and the README gives a benchmark of performance and computing time.
 
 ## Table of contents
 1. [Models](#models)
     1. [Evaluation metric & loss function](#evaluation-metric--loss-function)
     2. [Data Augmentation](#data-augmentation)
-    1. [Balancing the dataset](#balancing-the-dataset)
-    1. [Cross-Validation](#cross-validation)
-    1. [Model #1 (Fully-Connected Neural Network)](#model-1-fully-connected-neural-network)
-    1. [Model #2 (Convolutional Neural Network)](#model-2-convolutional-neural-network)
-3. [Setup](#setup)
-4. [CLI Usage](#cli-usage)
-5. [API Usage](#api-usage)
+    3. [Balancing the dataset](#balancing-the-dataset)
+    4. [Cross-Validation](#cross-validation)
+    5. [Model #1 (Fully-Connected Neural Network)](#model-1-fully-connected-neural-network)
+    6. [Model #2 (Convolutional Neural Network)](#model-2-convolutional-neural-network)
+    7. [Benchmark](#benchmark)
+2. [Setup](#setup)
+	3. [Building from sources](#building-from-sources)
+	4. [Building a docker image](#building-a-docker-image)
+3. [CLI Usage](#cli-usage)
+4. [API Usage](#api-usage)
 5. [Docker Usage](#docker-usage)
+	1. [Shared Directory](#shared-directory)
+	2. [Environnement variables](#environnement-variables)
+	3. [Starting the container](#starting-the-container)
 
 ![A molecule](https://www.pnglib.com/wp-content/uploads/2020/01/molecule_5e19a406b2242.png)
 ## Models
@@ -47,7 +52,7 @@ The training data set is split into 4 folds. They will be used for hyperparamete
 
 To avoid any bias, the augmented SMILES from the same initial molecule are grouped together within the same fold.
 
-![enter image description here](https://i.ibb.co/RQ5b44y/Untitled-Diagram-drawio-2.png)
+![The cross validation strategy in image](https://i.ibb.co/RQ5b44y/Untitled-Diagram-drawio-2.png)
 
 For each set of hyperparameters, the model is trained 4 times using 3 folds for training (in yellow) and one fold for validation (in green). The accuracy of the model is given by the average accuracy of the validation sets.
 
@@ -110,6 +115,49 @@ The input has a volume (V, C, 1) with :
 
 The filters hyperparameters such as the filter size and the number of kernels is learned with bayesian optimization, the same way it's done in the model #1.
 
+### Benchmark
+
+The predictive performance of the models is tested with a private CSV dataset of 4999 lines. Each line represents a molecule and gives:
+
+- The SMILES of the molecule, in textual format (column "smiles")
+- The presence or not of the property to predict (column "P1")
+
+The dataset is randomly divided into two parts:
+
+- The training set contains 4499 rows (90%) of the initial dataset
+- The test set contains 500 rows (10%) of the initial dataset
+
+The cross-validation strategy is applied on the training set. During all the training, the model remains agnostic of the test data. The test set is used only when evaluating the model performance, with the "evaluate" module.
+
+The benchmark is performed on the following configuration:
+
+- **CPU:** Intel(R) Core(TM) i7-10610U CPU @ 1.80GHz   2.30 GHz
+- **RAM:** 16,0 Go
+- **System type:** 64-bit operating system, x64 processor
+
+The results of the benchmark are as follows:
+
+| Model | Predict time | Training accuracy | Validation accuracy | Test accuracy 
+|--|--|--|--|--|
+| Dummy Classifier |  |
+| #1 (ECFP-FCNN) |  |
+| #2 (Smiles-CNN) |  |
+
+| Model | Test F-score | Test Precision | Test Recall 
+|--|--|--|--|--|
+| Dummy Classifier |  |
+| #1 (ECFP-FCNN) |  |
+| #2 (Smiles-CNN) |  |
+
+
+
+A few notes about the model choices:
+
+- Research shows very good performances with recurrent neural networks, especially of the LTSM type. It would be interesting to use this type of neural networks to replace the proposed model #2. 
+
+- The models are trained without GPU and without using cloud computing resources. The models were chosen to be fast to tune with a single CPU. 
+
+- The models were designed and implemented in approximately 30 hours, under high time constraints. More time would be needed to improve the performance of the models.
 
 ## Setup
 
@@ -166,4 +214,50 @@ Only the model 1 is supported for the API usage.
 
 ## Docker Usage
 
-TODO: add the container to use the docker image
+⚠️ The docker usage doesn't supports GPU processing unit, since it is untested. For GPU acceleration, please use the CLI (see above).
+
+The Docker image provides a distribution that allows you to run the application. A docker-compose interface allows you to instantiate a container that can perform the same commands described above (CLI section).
+
+### Shared directory
+
+The image does not contain the inputs. A shared mount point is dynamically achieved between the host and the container. Another shared mount point is achieved for the models parameters save.
+
+The input mount point must be created by the user at the root of the repository:
+
+    mkdir data
+    mv train.csv data/
+    mv test.csv data/
+
+The model mount point is automatically created.
+
+### Environnement variables
+
+The following environment variables should be defined by the user:
+
+| Variable | Description |
+|--|--|
+| COMMAND | Command to execute (either train, predict, evaluate or serve) |
+| CSV | Input table name to use for the training, the evaluation or the prediction. The file should be defined in the *data* directory |
+| MODEL | The model to use (either 1 or 2) |
+| SMILES | The smiles to predict |
+
+The COMMAND variable must be defined for any execution. Other variables are functions of the COMMAND.
+
+### Starting the container
+
+The container is created the following way:
+
+    # Creating the container
+    docker-compose build
+
+Then, it is possible to use it with the following Linux compatible commands:
+
+    # Training from input_train.csv
+    COMMAND=train CSV=input_train.csv MODEL=1  docker-compose up
+    
+    # Evaluating from input_test.csv
+    COMMAND=evaluate CSV=input_test.csv MODEL=1  docker-compose up
+    
+    # Serving
+    COMMAND=serve MODEL=1  docker-compose up
+
