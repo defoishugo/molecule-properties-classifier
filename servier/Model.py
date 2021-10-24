@@ -1,3 +1,4 @@
+from sklearn.metrics import classification_report
 from sklearn.model_selection import GroupKFold
 from keras.callbacks import EarlyStopping
 from abc import abstractmethod
@@ -72,8 +73,9 @@ class Model():
         self.model.save_weights(PARAMETERS_PATH)
 
     def evaluate(self):
-        results = self.model.evaluate(self.X, self.y, verbose=0)
-        print("[test loss, test accuracy]:", results)
+        y_pred = self.model.predict(self.X, verbose=1).reshape(-1)
+        y_pred = np.where(y_pred > 0.5, 1, 0)
+        print(classification_report(self.y, y_pred))
 
     def predict(self, overwrite_X=None):
         prediction = self.model.predict(self.X)
