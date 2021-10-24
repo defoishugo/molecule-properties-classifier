@@ -22,10 +22,10 @@ def train(input_table, model):
                                                          model=model)
     if model == 1:
         model = FCNNModel(X_train, y_train, groups=groups, batch_size=2048,
-                          tune_epochs=75, train_epochs=150, tune_trials=30)
+                          tune_epochs=75, train_epochs=300, tune_trials=30)
     else:
         model = CNNModel(X_train, y_train, groups=groups, batch_size=2048,
-                         tune_epochs=75, train_epochs=150, tune_trials=30)
+                         tune_epochs=75, train_epochs=300, tune_trials=30)
     model.tune()
     model.train()
     return 0
