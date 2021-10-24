@@ -4,7 +4,7 @@ import pickle as pk
 from rdkit import Chem
 from servier.feature_extractor import fingerprint_features as get_ecfp
 
-RANDOM_SMILES = 60
+RANDOM_SMILES = 0
 USEFUL_FEATURES_PATH = "__save__/useful_features.pkl"
 SMILES_CHARS = [' ', '#', '%', '(', ')', '+', '-', '.', '/',
                 '0', '1', '2', '3', '4', '5', '6', '7', '8',
