@@ -12,8 +12,8 @@ MoleculeClassification is a molecule properties classifier based on neural netwo
     6. [Model #2 (Convolutional Neural Network)](#model-2-convolutional-neural-network)
     7. [Benchmark](#benchmark)
 2. [Setup](#setup)
-	3. [Building from sources](#building-from-sources)
-	4. [Building a docker image](#building-a-docker-image)
+	1. [Building from sources](#building-from-sources)
+	2. [Building a docker image](#building-a-docker-image)
 3. [CLI Usage](#cli-usage)
 4. [API Usage](#api-usage)
 5. [Docker Usage](#docker-usage)
@@ -117,6 +117,8 @@ The filters hyperparameters such as the filter size and the number of kernels is
 
 ### Benchmark
 
+#### Benchmark strategy
+
 The predictive performance of the models is tested with a private CSV dataset of 4999 lines. Each line represents a molecule and gives:
 
 - The SMILES of the molecule, in textual format (column "smiles")
@@ -135,29 +137,37 @@ The benchmark is performed on the following configuration:
 - **RAM:** 16,0 Go
 - **System type:** 64-bit operating system, x64 processor
 
-The results of the benchmark are as follows:
+#### Results on the train dataset
 
-| Model | Predict time | Training accuracy | Validation accuracy | Test accuracy 
-|--|--|--|--|--|
-| Dummy Classifier |  |
-| #1 (ECFP-FCNN) |  |
-| #2 (Smiles-CNN) |  |
+| Model | Accuracy | Precision | Recall | F1-score | Time to train
+|--|--|--|--|--|--|
+| #1 (ECFP-FCNN) | 0.69 | 0.91 | 0.69 | 0.79 | < 10 min
+| #2 (Smiles-CNN) | 0.75 | 0.95 | 0.75 | 0.84 | < 10 min
 
-| Model | Test F-score | Test Precision | Test Recall 
-|--|--|--|--|--|
-| Dummy Classifier |  |
-| #1 (ECFP-FCNN) |  |
-| #2 (Smiles-CNN) |  |
+#### Results on the test dataset
 
+| Model | Accuracy | Precision | Recall | F1-score | Time to train
+|--|--|--|--|--|--|
+| #1 (ECFP-FCNN) | 0.63 | 0.85 | 0.66 | 0.74 | < 10 min
+| #2 (Smiles-CNN) | 0.66 | 0.85 | 0.70 | 0.77 | < 10 min
 
+#### The usage of data augmentation
 
-A few notes about the model choices:
+The use of data augmentation is debatable. If the method is useful in some papers, I have observed strong degradations of the performances when using an important data augmentation (rate of +600%). 
 
-- Research shows very good performances with recurrent neural networks, especially of the LTSM type. It would be interesting to use this type of neural networks to replace the proposed model #2. 
+For example, on a CNN, the data augmentation gives an accuracy of 0.62 on the training set and 0.59 on the test set against 0.75 and 0.66 without using data augmentation.
+
+Moreover, data augmentation multiplies the tuning times by 600%. 
+
+💡 However, the precision is increased on the test set: we go from a precision of 0.85 (without data augmentation) to 0.93 (with data augmentation). Depending on the objective of the prediction of molecules, it may be interesting to use a data augmentation method. If the property to be predicted is considered an anomaly (e.g. toxicity), you need to select your good data augmentation rate. By default, it is disabled. To enable it, see the `RANDOM_SMILES` variable in `dataset.py`.
+
+#### Ideas and comments
+
+- Research shows very good performances with recurrent neural networks, especially of the LTSM type. It would be interesting to use this type of neural networks instead of the CNN proposed. Moreover, some other models like graphs CNN are also very interesting.  
 
 - The models are trained without GPU and without using cloud computing resources. The models were chosen to be fast to tune with a single CPU. 
 
-- The models were designed and implemented in approximately 30 hours, under high time constraints. More time would be needed to improve the performance of the models.
+- The models were designed, implemented and tested in approximately 30 hours, under high time constraints. More time would be needed to improve the performance of the models.
 
 ## Setup
 
