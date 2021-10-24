@@ -107,9 +107,11 @@ def docker():
         print("Please set the environment variable COMMAND.")
         sys.exit(1)
     if os.environ["COMMAND"] == "train":
-        sys.exit(train(f'/root/data/{os.environ["CSV"]}', int(os.environ["MODEL"])))
+        sys.exit(train(f'/root/data/{os.environ["CSV"]}',
+                 int(os.environ["MODEL"])))
     elif os.environ["COMMAND"] == "evaluate":
-        sys.exit(evaluate(f'/root/data/{os.environ["CSV"]}', int(os.environ["MODEL"])))
+        sys.exit(evaluate(f'/root/data/{os.environ["CSV"]}',
+                 int(os.environ["MODEL"])))
     elif os.environ["COMMAND"] == "predict":
         sys.exit(predict(os.environ["SMILES"], int(os.environ["MODEL"])))
     elif os.environ["COMMAND"] == "serve":
